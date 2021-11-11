@@ -216,23 +216,112 @@ def gaussianfft(pic, t = 0.3):
 	filterhat = abs(fft2(gaussianFilter))
 
 	res = Fhat * filterhat
-	return ifft2(res)
+	return abs(ifft2(res))
 
-def gaussianConvolution():
-	img1 = np.load("Images-npy/phonecalc128.npy")
+def gaussianTest():
+	pic = deltafcn(128, 128)
+	ts = [0.1, 0.3, 1, 10, 100]
 	f = plt.figure()
 	f.subplots_adjust(wspace=0.2, hspace=0.2)
 	plt.rc('axes', titlesize=10)
 
-	a1 = f.add_subplot(1, 2, 1)
-	showgrey(img1, False)
-	a1.title.set_text("phonecalc128")
-	a2 = f.add_subplot(1, 2, 2)
-	showgrey(gaussianfft(img1, 10), False)
-	a2.title.set_text("gaussian")
+	pos = 1
+	for t in ts:
+		# effect of discretization when t <= 0.3
+		psf = gaussfft(deltafcn(128, 128), t)
+		discpsf = discgaussfft(deltafcn(128, 128), t)
+		a1 = f.add_subplot(1, len(ts), pos)
+		showgrey(gaussianfft(psf, t), False)
+		a1.title.set_text(t)
+		pos += 1
+		print("With t = ", t, ", gaussfft has a variance of ", variance(psf))
+		print("With t = ", t, ", discgaussfft has a variance of ", variance(discpsf))
 
 	plt.show()
 
+
+def gaussianConvolution():
+	gaussianTest()
+
+	imgs = [np.load("Images-npy/phonecalc128.npy"),
+		   np.load("Images-npy/few128.npy"),
+		   np.load("Images-npy/nallo128.npy")]
+	ts = [1, 4, 16, 64, 256]
+	f = plt.figure()
+	f.subplots_adjust(wspace=0.2, hspace=0.2)
+	plt.rc('axes', titlesize=10)
+
+	pos = 1
+	for img in imgs:
+		for t in ts:
+			a1 = f.add_subplot(len(imgs), len(ts), pos)
+			showgrey(gaussianfft(img, t), False)
+			a1.title.set_text(t)
+			pos += 1
+
+	plt.show()
+
+def smoothing():
+	office = np.load("Images-npy/office256.npy")
+	add = gaussnoise(office, 16)
+	sap = sapnoise(office, 0.1, 255)
+	picname = ["orig", "gsnoise", "sap"]
+	imgs = [office, add, sap]
+	smooths = [gaussianfft, discgaussfft, medfilt, ideal]
+	gaussParam = [0.1, 0.2, 0.5, 0.8, 1, 2, 3, 5]
+	medParam = range(1, 9)
+	idealParam = [0.01, 0.02, 0.05, 0.1, 0.2, 0.5, 0.8, 1]
+	params = [gaussParam, gaussParam, medParam, idealParam]
+	name = ["gauss", "discgauss", "med", "ideal"]
+	f = plt.figure(figsize=(20, 18), dpi=320)
+	f.subplots_adjust(wspace=0.2, hspace=0.2)
+	plt.rc('axes', titlesize=10)
+	pos = 1
+	imgnum = 0
+	for img in imgs:
+		filtnum = 0
+		for filt in smooths:
+			for param in params[filtnum]:
+				a1 = f.add_subplot(int(len(imgs) * len(smooths)), len(params[filtnum]), pos)
+				showgrey(filt(img, param), False)
+				title = picname[imgnum] + " " + name[filtnum] + ", " + str(param)
+				a1.title.set_text(title)
+				pos += 1
+
+			filtnum += 1
+		imgnum += 1
+	plt.show()
+
+def smoothAndSubsampling():
+	img = np.load("Images-npy/phonecalc256.npy")
+	smoothimg = img
+	N = 5
+	f = plt.figure()
+	f.subplots_adjust(wspace=0, hspace=0)
+	for i in range(N):
+		if i > 0:  # generate subsampled versions
+			img = rawsubsample(img)
+			# smoothimg =  gaussfft(smoothimg, 0.5)# <call_your_filter_here>(smoothimg, <params>)
+			smoothimg = ideal(smoothimg, 0.1)
+			smoothimg = rawsubsample(smoothimg)
+		f.add_subplot(4, N, i + 1)
+		showgrey(img, False)
+		f.add_subplot(4, N, i + N + 1)
+		showgrey(smoothimg, False)
+
+	img = np.load("Images-npy/phonecalc256.npy")
+	smoothimg = img
+	for i in range(N):
+		if i > 0:  # generate subsampled versions
+			img = rawsubsample(img)
+			smoothimg =  gaussfft(smoothimg, 0.5)# <call_your_filter_here>(smoothimg, <params>)
+			# smoothimg = ideal(smoothimg, 0.05)
+			smoothimg = rawsubsample(smoothimg)
+		f.add_subplot(4, N, i + 2*N + 1)
+		showgrey(img, False)
+		f.add_subplot(4, N, i + 3*N + 1)
+		showgrey(smoothimg, False)
+	plt.show()
 
 if __name__ == '__main__':
 	# fourierTransformTest()
@@ -241,4 +330,6 @@ if __name__ == '__main__':
 	# scaling()
 	# rotation()
 	# phaseAndMagnitude()
-	gaussianConvolution()
+	# gaussianConvolution()
+	# smoothing()
+	smoothAndSubsampling()
