@@ -108,12 +108,18 @@ def multiplication():
 	f = plt.figure()
 	f.subplots_adjust(wspace=0.2, hspace=0.2)
 	plt.rc('axes', titlesize=10)
-	a1 = f.add_subplot(1, 2, 1)
+	a1 = f.add_subplot(1, 3, 1)
 	showgrey(F * G, False)
 	a1.title.set_text("F * G")
-	a2 = f.add_subplot(1, 2, 2)
+	a2 = f.add_subplot(1, 3, 2)
 	showfs(fft2(F * G), False)
 	a2.title.set_text("fft2(F * G)")
+
+	Fhat = fftshift(fft2(F))
+	Ghat = fftshift(fft2(G))
+	a3 = f.add_subplot(1, 3, 3)
+	showgrey(np.log(1 + np.abs(convolve2d(Fhat, Ghat, "same")/(F.shape[0]*F.shape[1]))), False)
+	a3.title.set_text("conv2d(Fhat, Ghat)")
 	plt.show()
 
 def scaling():
@@ -151,7 +157,7 @@ def rotation():
 		plt.rc('axes', titlesize=10)
 		a1 = f.add_subplot(4, 3, 3 * i + 1)
 		showgrey(G, False)
-		a1.title.set_text("G" + str(i))
+		a1.title.set_text("G" + str(i) + ", " + str(alpha[i]))
 		a2 = f.add_subplot(4, 3, 3 * i + 2)
 		Ghat = fft2(G)
 
@@ -247,7 +253,7 @@ def gaussianConvolution():
 		   np.load("Images-npy/few128.npy"),
 		   np.load("Images-npy/nallo128.npy")]
 	ts = [1, 4, 16, 64, 256]
-	f = plt.figure()
+	f = plt.figure(dpi=200)
 	f.subplots_adjust(wspace=0.2, hspace=0.2)
 	plt.rc('axes', titlesize=10)
 
@@ -302,12 +308,16 @@ def smoothAndSubsampling():
 		if i > 0:  # generate subsampled versions
 			img = rawsubsample(img)
 			# smoothimg =  gaussfft(smoothimg, 0.5)# <call_your_filter_here>(smoothimg, <params>)
-			smoothimg = ideal(smoothimg, 0.1)
+			smoothimg = ideal(smoothimg, 0.3)
 			smoothimg = rawsubsample(smoothimg)
-		f.add_subplot(4, N, i + 1)
+		a1 = f.add_subplot(3, N, i + 1)
 		showgrey(img, False)
-		f.add_subplot(4, N, i + N + 1)
+		if i == 0:
+			a1.title.set_text("direct subsampling")
+		a2 = f.add_subplot(3, N, i + N + 1)
 		showgrey(smoothimg, False)
+		if i == 0:
+			a2.title.set_text("ideal, 0.3")
 
 	img = np.load("Images-npy/phonecalc256.npy")
 	smoothimg = img
@@ -317,10 +327,10 @@ def smoothAndSubsampling():
 			smoothimg =  gaussfft(smoothimg, 0.5)# <call_your_filter_here>(smoothimg, <params>)
 			# smoothimg = ideal(smoothimg, 0.05)
 			smoothimg = rawsubsample(smoothimg)
-		f.add_subplot(4, N, i + 2*N + 1)
-		showgrey(img, False)
-		f.add_subplot(4, N, i + 3*N + 1)
+		a3 = f.add_subplot(3, N, i + 2*N + 1)
 		showgrey(smoothimg, False)
+		if i == 0:
+			a3.title.set_text("gaussian, 0.5")
 	plt.show()
 
 if __name__ == '__main__':
@@ -329,7 +339,8 @@ if __name__ == '__main__':
 	# multiplication()
 	# scaling()
 	# rotation()
-	# phaseAndMagnitude()
+	phaseAndMagnitude()
 	# gaussianConvolution()
+	# gaussianTest()
 	# smoothing()
-	smoothAndSubsampling()
+	# smoothAndSubsampling()
